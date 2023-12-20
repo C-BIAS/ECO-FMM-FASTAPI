@@ -36,13 +36,19 @@ def initialize_db():
     conn = connect_db()
     cursor = conn.cursor()
     # Create table for tasks
+# Function to initialize the database with tables if they don't exist
+def initialize_db():
+    conn = connect_db()
+    cursor = conn.cursor()
+    # Update the table creation script for tasks to include the due_date column
     cursor.execute('''CREATE TABLE IF NOT EXISTS Tasks (
                       id INTEGER PRIMARY KEY AUTOINCREMENT,
                       title TEXT,
                       description TEXT,
-                      due_date TEXT,
+                      due_date TEXT, 
                       status TEXT,
                       dependencies TEXT)''')
+
     # Create table for chat history - not used but defined for future feature growth
     cursor.execute('''CREATE TABLE IF NOT EXISTS ChatHistory (
                       id INTEGER PRIMARY KEY AUTOINCREMENT,
