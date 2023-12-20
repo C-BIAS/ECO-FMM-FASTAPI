@@ -20,7 +20,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.0"}
+    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.1"}
 
 @app.post("/tasks")
 def create_task(task: Task):
