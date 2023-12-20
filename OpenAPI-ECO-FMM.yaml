@@ -1,16 +1,37 @@
 openapi: 3.0.0
 info:
   title: ECO-FMM-FASTAPI
-  description: API for ECO Functional Memory Module
-  version: 1.1
+  version: v1.1
+  description: FastAPI application to manage tasks and receive feedback
+  contact:
+    name: C-BIAS ENTERPRISES
+    year: 2024
 servers:
-  - url: http://0.0.0.0/
+  - url: http://example.com/
+    description: Main server
+
 paths:
+  /:
+    get:
+      summary: Root Endpoint
+      operationId: readRoot
+      responses:
+        '200':
+          description: Welcome Message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
   /tasks:
     get:
-      summary: Retrieve all tasks
+      summary: Get All Tasks
+      operationId: getTasks
       responses:
-        200:
+        '200':
           description: A list of tasks
           content:
             application/json:
@@ -18,8 +39,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Task'
+
     post:
-      summary: Create a new task or update an existing one based on its title
+      summary: Create or Update a Task
+      operationId: manageTask
       requestBody:
         required: true
         content:
@@ -27,7 +50,7 @@ paths:
             schema:
               $ref: '#/components/schemas/Task'
       responses:
-        201:
+        '201':
           description: Task created or updated successfully
           content:
             application/json:
@@ -36,13 +59,13 @@ paths:
                 properties:
                   task_id:
                     type: integer
-                    description: ID of the created or updated task
                   message:
                     type: string
-                    description: Success message
+
   /feedback:
     post:
-      summary: Submit user feedback
+      summary: Submit Feedback
+      operationId: submitFeedback
       requestBody:
         required: true
         content:
@@ -50,7 +73,7 @@ paths:
             schema:
               $ref: '#/components/schemas/UserFeedback'
       responses:
-        201:
+        '201':
           description: Feedback submitted successfully
           content:
             application/json:
@@ -59,40 +82,42 @@ paths:
                 properties:
                   feedback_id:
                     type: integer
-                    description: ID of the submitted feedback
                   message:
                     type: string
-                    description: Success message
+
 components:
   schemas:
     Task:
       type: object
+      required:
+        - title
+        - description
+        - due_date
+        - status
       properties:
         title:
           type: string
         description:
           type: string
-        dueDate:
+        due_date:
           type: string
-          format: date
         status:
           type: string
         priority:
           type: integer
+          description: Task priority from 1 (highest) to 5 (lowest)
           minimum: 1
           maximum: 5
-          description: Task priority from 1 (highest) to 5 (lowest)
         dependencies:
           type: array
           items:
             type: string
-    ChatHistory:
-      type: object
-      properties:
-        summary:
-          type: string
+
     UserFeedback:
       type: object
+      required:
+        - user_id
+        - feedback
       properties:
         user_id:
           type: integer
