@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API for managing tasks, chat history, and user feedback
 servers:
-  - url: https://eco-fmm-fastapi-gpt-carlosjperez.replit.app
+  - url: https://eco-fmm.replit.app
     description: Development server
 
 paths:
