@@ -120,7 +120,7 @@ def manage_task(task: Task):
 # Root endpoint to display a welcome message
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.0"}
+    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.1"}
 
 # Main function which runs only if this script is executed as the main program
 if __name__ == "__main__":
