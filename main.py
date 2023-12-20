@@ -113,6 +113,32 @@ def manage_task(task: Task):
         # Ensure the database connection is closed
         if conn:
             conn.close()
+@app.post("/feedback", status_code=201)
+def submit_feedback(feedback: UserFeedback):
+    try:
+        # Open a new connection to the database
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Insert the feedback into the database
+        cursor.execute("INSERT INTO Feedback (user_id, feedback) VALUES (?, ?)",
+                       (feedback.user_id, feedback.feedback))
+        
+        # Get the ID of the newly inserted feedback
+        feedback_id = cursor.lastrowid
+        
+        # Commit the changes to the database
+        conn.commit()
+        
+        # Return a success message including the feedback ID
+        return {"feedback_id": feedback_id, "message": "Feedback submitted successfully."}
+    except sqlite3.Error as e:
+        # If there is a database error, raise an HTTPException with the detail
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        # Ensure the database connection is closed whether or not an error occurred
+        if conn:
+            conn.close()
 
 # Other endpoints would be similar to the ones above and can be commented
 # accordingly when their logic is defined.
