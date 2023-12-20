@@ -1,0 +1,132 @@
+openapi: 3.0.0
+info:
+  title: ECO-FMM-FASTAPI
+  version: 1.0.0
+  description: API for managing tasks, chat history, and user feedback
+servers:
+  - url: https://eco-fmm-fastapi-gpt-carlosjperez.replit.app
+    description: Development server
+
+paths:
+  /tasks:
+    get:
+      summary: Retrieve a list of tasks
+      operationId: get_tasks
+      responses:
+        '200':
+          description: A list of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+
+    post:
+      summary: Create or update a task
+      operationId: manage_task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+      responses:
+        '201':
+          description: Task created or updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: integer
+                  message:
+                    type: string
+
+  /chatHistory:
+    post:
+      summary: Update chat history
+      operationId: update_chat_history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatHistory'
+      responses:
+        '201':
+          description: Chat history updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /feedback:
+    post:
+      summary: Submit user feedback
+      operationId: submit_feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFeedback'
+      responses:
+        '201':
+          description: Feedback submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  feedback_id:
+                    type: integer
+                  message:
+                    type: string
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+        dependencies:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - description
+        - dueDate
+        - status
+
+    ChatHistory:
+      type: object
+      properties:
+        summary:
+          type: string
+      required:
+        - summary
+
+    UserFeedback:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        feedback:
+          type: string
+      required:
+        - user_id
+        - feedback
