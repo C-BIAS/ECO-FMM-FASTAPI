@@ -43,7 +43,8 @@ def initialize_db():
         conn.commit()
 
 initialize_db()
-
+# Inform the user that the database has been created or reset.
+print("A new 'memory.sqlite' file has been created with the required schema.")
 def task_exists(task_id: int) -> bool:
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -56,9 +57,12 @@ def get_tasks():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Tasks")
-            return [dict(row) for row in cursor.fetchall()]
+            tasks = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+            return [dict(zip(columns, task)) for task in tasks]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
+
 
 @app.post("/tasks", status_code=201)
 def manage_task(task: Task):
