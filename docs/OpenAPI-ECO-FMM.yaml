@@ -34,6 +34,43 @@ paths:
                     type: string
       security:
         - bearerAuth: []
+    get:
+      summary: Retrieve a list of tasks
+      operationId: getTasks
+      responses:
+        '200':
+          description: A list of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+      security:
+        - bearerAuth: []
+
+  /tasks/{task_id}:
+    get:
+      summary: Retrieve a task by ID
+      operationId: getTaskById
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+          description: Unique ID of the task
+      responses:
+        '200':
+          description: Detailed information about a task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+      security:
+        - bearerAuth: []
 
   /feedback:
     post:
@@ -102,10 +139,10 @@ paths:
 
 components:
   securitySchemes:
-    bearerAuth: # Define the security scheme as HTTP Bearer
+    bearerAuth: 
       type: http
       scheme: bearer
-      bearerFormat: JWT # Specify the bearer format, if applicable (e.g., JWT)
+      bearerFormat: JWT
 
   schemas:
     Task:
@@ -143,7 +180,6 @@ components:
         area:
           type: string
           description: The area of the task (e.g., personal, work)
-
     UserFeedback:
       type: object
       required:
@@ -157,7 +193,6 @@ components:
         feedback:
           type: string
           description: Feedback provided by the user
-
     Behavior:
       type: object
       required:
@@ -173,4 +208,3 @@ components:
 
 security:
   - bearerAuth: []
-
