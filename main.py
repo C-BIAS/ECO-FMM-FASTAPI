@@ -23,7 +23,7 @@ class UserFeedback(BaseModel):
 
 @contextmanager
 def get_db_connection():
-    conn = sqlite3.connect('memory.sqlite')
+    conn = sqlite3.connect('tasks.db')
     try:
         yield conn
     finally:
@@ -45,9 +45,20 @@ def initialize_db():
                       feedback TEXT NOT NULL)''')
         conn.commit()
 
-initialize_db()
-# Inform the user that the database has been created or reset.
-print("A new 'memory.sqlite' file has been created with the required schema.")
+def check_db_exists():
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='Tasks' OR name='Feedback')")
+            return len(cursor.fetchall()) == 2
+    except Exception as e:
+        print(f"Error checking if DB exists: {e}")
+        return False
+
+if not check_db_exists():
+    initialize_db()
+    print("Database and tables are created.")
+
 def task_exists(task_id: int) -> bool:
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -104,7 +115,7 @@ def submit_feedback(feedback: UserFeedback):
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.3"}
+    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.4.0 API!""}
 
 if __name__ == "__main__":
     import uvicorn
