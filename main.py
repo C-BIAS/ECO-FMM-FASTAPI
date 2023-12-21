@@ -67,20 +67,24 @@ def task_exists(task_id: int) -> bool:
 
 @app.get("/tasks")
 def get_tasks(category: Optional[str] = Query(None, alias="category")):
-      try:
-          with get_db_connection() as conn:
-              cursor = conn.cursor()
-              query = "SELECT * FROM Tasks"
-              params = ()
-              if category:
-                  query += " WHERE status = ?"
-                  params = (category,)
-              cursor.execute(query, params)
-              tasks = cursor.fetchall()
-              columns = [column[0] for column in cursor.description]
-              return [dict(zip(columns, task)) for task in tasks]
-      except Exception as e:
-          raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            query = "SELECT * FROM Tasks"
+            params = ()
+            if category:
+                query += " WHERE status = ?"
+                params = (category,)
+            cursor.execute(query, params)
+            tasks = cursor.fetchall()
+            if not tasks:
+                print(f"No tasks found with category '{category}'")  # Debug print statement
+            columns = [column[0] for column in cursor.description]
+            return [dict(zip(columns, task)) for task in tasks]
+    except Exception as e:
+        print(f"Failed to retrieve tasks: {str(e)}")  # Debug print statement
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
+
 
 @app.post("/tasks", status_code=201)
 def manage_task(task: Task):
