@@ -11,9 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
 
 app = FastAPI()
-# Add the HTTPBearer instance
 security = HTTPBearer()
-# Load SECRET_TOKEN from environment variables
 SECRET_TOKEN = os.getenv('SECRET_TOKEN')
 
 def verify_token(auth_credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -41,15 +39,16 @@ class Behavior(BaseModel):
     description: str
 
 @contextmanager
-def get_db_connection():
-    conn = sqlite3.connect('tasks.db')
+def get_db_connection(database: str):
+    conn = sqlite3.connect(f'{database}.sqlite')
     try:
         yield conn
     finally:
         conn.close()
 
-def initialize_db():
-    with get_db_connection() as conn:
+def initialize_databases():
+    # Initialize tasks_db.sqlite
+    with get_db_connection("tasks_db") as conn:
         cursor = conn.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Tasks (
@@ -69,6 +68,11 @@ def initialize_db():
                 feedback TEXT NOT NULL
             )
         ''')
+        conn.commit()
+
+    # Initialize behavior_db.sqlite
+    with get_db_connection("behavior_db") as conn:
+        cursor = conn.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Behavior (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,54 +81,18 @@ def initialize_db():
         ''')
         conn.commit()
 
-def check_db_exists():
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('Tasks', 'Feedback', 'Behavior')")
-            return len(cursor.fetchall()) == 3
-    except Exception as e:
-        print(f"Error checking if DB exists: {e}")
-        return False
+initialize_databases() # Call the function to initialize both databases
 
-# Initialize the database if tables do not exist
-if not check_db_exists():
-    initialize_db()
-    print("Database and tables are created.")
-
-
-
-def task_exists(task_id: int) -> bool:
-    with get_db_connection() as conn:
+def task_exists(task_id: int, database: str = "tasks_db") -> bool:
+    with get_db_connection(database) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM Tasks WHERE id = ?", (task_id,))
         return cursor.fetchone() is not None
 
-@app.get("/tasks", dependencies=[Depends(verify_token)])
-def get_tasks(category: Optional[str] = Query(None, alias="category")):
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            query = "SELECT * FROM Tasks"
-            params = ()
-            if category:
-                query += " WHERE status = ?"
-                params = (category,)
-            print(f"Executing query: {query} with params: {params}")  # Debug print statement
-            cursor.execute(query, params)
-            tasks = cursor.fetchall()
-            if not tasks:
-                print(f"No tasks found with category '{category}'")  # Debug print statement
-            columns = [column[0] for column in cursor.description]
-            return [dict(zip(columns, task)) for task in tasks]
-    except Exception as e:
-        print(f"Failed to retrieve tasks: {str(e)}")  # Debug print statement
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
-
 @app.post("/tasks", status_code=201, dependencies=[Depends(verify_token)])
 def manage_task(task: Task):
     try:
-        with get_db_connection() as conn:
+        with get_db_connection("tasks_db") as conn:
             cursor = conn.cursor()
             if task.id and task_exists(task.id):
                 cursor.execute(
@@ -137,8 +105,8 @@ def manage_task(task: Task):
                     (task.title, task.description, task.due_date, task.status, task.priority, task.area)
                 )
                 task_id = cursor.lastrowid
-                conn.commit()  # Make sure to commit the changes
-                return {"task_id": task_id, "message": "Task created successfully."}
+            conn.commit()
+            return {"task_id": task_id, "message": "Task created successfully."}
     except sqlite3.IntegrityError as e:
         raise HTTPException(status_code=400, detail="Database integrity error: Task could not be managed.")
     except Exception as e:
@@ -147,19 +115,45 @@ def manage_task(task: Task):
 @app.post("/feedback", status_code=201, dependencies=[Depends(verify_token)])
 def submit_feedback(feedback: UserFeedback):
     try:
-        with get_db_connection() as conn:
+        with get_db_connection("tasks_db") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO Feedback (user_id, feedback) VALUES (?, ?)", 
                            (feedback.user_id, feedback.feedback))
             feedback_id = cursor.lastrowid
+            conn.commit()
             return {"feedback_id": feedback_id, "message": "Feedback submitted successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to submit feedback: {str(e)}")
 
+@app.post("/behaviors", status_code=201, dependencies=[Depends(verify_token)])
+def add_behavior(behavior: Behavior):
+    try:
+        with get_db_connection("behavior_db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO Behavior (description) VALUES (?)", 
+                           (behavior.description,))
+            behavior_id = cursor.lastrowid
+            conn.commit()
+            return {"behavior_id": behavior_id, "message": "Behavior added successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add behavior: {str(e)}")
+
+@app.get("/behaviors", dependencies=[Depends(verify_token)])
+def get_behaviors():
+    try:
+        with get_db_connection("behavior_db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Behavior")
+            behaviors = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+            return [dict(zip(columns, behavior)) for behavior in behaviors]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve behaviors: {str(e)}")
+
 @app.get("/")
 def read_root():
   return {"message": "Welcome to the ECO-FMM-FASTAPI v2.0.0 API!"}
-  
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=80, reload=False)
