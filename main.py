@@ -115,8 +115,8 @@ def submit_feedback(feedback: UserFeedback):
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.4.0 API!""}
-
+  return {"message": "Welcome to the ECO-FMM-FASTAPI v1.4.0 API!"}
+  
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=80, reload=False)
