@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: ECO-FMM-FASTAPI
-  version: v1.2  # Updated to match the version in main.py
+  version: v1.3  # Updated to match the version in main.py
   description: FastAPI application to manage tasks and receive feedback
   contact:
     name: C-BIAS ENTERPRISES
@@ -25,7 +25,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Welcome to the ECO-FMM-FASTAPI v1.2"  # Updated example message
+                    example: "Welcome to the ECO-FMM-FASTAPI v1.3"  # Updated example message to v1.3
 
   /tasks:
     get:
@@ -130,3 +130,4 @@ components:
           type: integer
         feedback:
           type: string
+          

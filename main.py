@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import sqlite3
 from contextlib import contextmanager
+from fastapi import Query
+
 
 app = FastAPI()
 
@@ -13,6 +15,7 @@ class Task(BaseModel):
     due_date: str
     status: str
     priority: int = Field(ge=1, le=5)
+    status: str = Field(..., description="Status of the task, can be used to specify 'Behavioral Prompt'")
 
 class UserFeedback(BaseModel):
     user_id: int
@@ -52,17 +55,21 @@ def task_exists(task_id: int) -> bool:
         return cursor.fetchone() is not None
 
 @app.get("/tasks")
-def get_tasks():
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM Tasks")
-            tasks = cursor.fetchall()
-            columns = [column[0] for column in cursor.description]
-            return [dict(zip(columns, task)) for task in tasks]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
-
+def get_tasks(category: Optional[str] = Query(None, alias="category")):
+      try:
+          with get_db_connection() as conn:
+              cursor = conn.cursor()
+              query = "SELECT * FROM Tasks"
+              params = ()
+              if category:
+                  query += " WHERE status = ?"
+                  params = (category,)
+              cursor.execute(query, params)
+              tasks = cursor.fetchall()
+              columns = [column[0] for column in cursor.description]
+              return [dict(zip(columns, task)) for task in tasks]
+      except Exception as e:
+          raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
 
 @app.post("/tasks", status_code=201)
 def manage_task(task: Task):
@@ -97,7 +104,7 @@ def submit_feedback(feedback: UserFeedback):
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.2"}
+    return {"message": "Welcome to the ECO-FMM-FASTAPI v1.3"}
 
 if __name__ == "__main__":
     import uvicorn
