@@ -1,4 +1,4 @@
 MIT License
 
-Copyright (c) [Year] [Your Name or Organization]
+Copyright (c) [2024] [C-BIAS ENTERPRISES]
 

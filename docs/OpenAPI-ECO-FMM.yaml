@@ -1,35 +1,22 @@
 openapi: 3.0.0
-info:
-  title: ECO-FMM-FASTAPI
-  version: v1.4.0  # Version number updated to match main.py
-  description: FastAPI application to manage tasks and receive feedback
-  contact:
-    name: C-BIAS ENTERPRISES
-    year: 2024
-servers:
-  - url: http://example.com/
-    description: Main server
-paths:
-  /:
-    get:
-      summary: Root Endpoint
-      operationId: readRoot
-      responses:
-        '200':
-          description: Welcome Message
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Welcome to the ECO-FMM-FASTAPI v1.4.0 API!"  # Updated example message to v1.4.0
 
+info:
+  title: ECO-FMM-FASTAPI API
+  version: 2.0.0
+  description: API service for ECO-FMM-FASTAPI v2.0.0
+
+paths:
   /tasks:
     get:
-      summary: Get All Tasks
+      summary: Retrieve a list of tasks
       operationId: getTasks
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+          description: Filter tasks by status category
       responses:
         '200':
           description: A list of tasks
@@ -41,7 +28,7 @@ paths:
                   $ref: '#/components/schemas/Task'
 
     post:
-      summary: Create or Update a Task
+      summary: Create or update a task
       operationId: manageTask
       requestBody:
         required: true
@@ -51,7 +38,7 @@ paths:
               $ref: '#/components/schemas/Task'
       responses:
         '201':
-          description: Task created or updated successfully
+          description: Task created or updated
           content:
             application/json:
               schema:
@@ -61,13 +48,10 @@ paths:
                     type: integer
                   message:
                     type: string
-                  example:  # Added missing example field
-                    task_id: 3
-                    message: "Task updated successfully."
 
   /feedback:
     post:
-      summary: Submit Feedback
+      summary: Submit user feedback
       operationId: submitFeedback
       requestBody:
         required: true
@@ -77,7 +61,7 @@ paths:
               $ref: '#/components/schemas/UserFeedback'
       responses:
         '201':
-          description: Feedback submitted successfully
+          description: Feedback received
           content:
             application/json:
               schema:
@@ -86,24 +70,17 @@ paths:
                   feedback_id:
                     type: integer
                   message:
-                    type: string  
-                  example:  # Added missing example field
-                    feedback_id: 1
-                    message: "Feedback submitted successfully."
+                    type: string
 
 components:
   schemas:
     Task:
       type: object
-      required:
-        - title
-        - description
-        - due_date
-        - status
       properties:
-        id: 
+        id:
           type: integer
           description: Unique ID of the task
+          nullable: true
         title:
           type: string
         description:
@@ -112,21 +89,22 @@ components:
           type: string
         status:
           type: string
+          description: Status of the task
         priority:
           type: integer
-          description: Task priority from 1 (highest) to 5 (lowest)
           minimum: 1
           maximum: 5
-        # Removed unnecessary dependencies field from Task schema
+        area:
+          type: string
+          nullable: true
+          description: The area of the task
 
     UserFeedback:
       type: object
-      required:
-        - user_id
-        - feedback
       properties:
         user_id:
           type: integer
         feedback:
           type: string
-          
+
+  # Add other schemas and security here as needed
