@@ -1,13 +1,27 @@
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 import sqlite3
 from contextlib import contextmanager
 from fastapi import Query
+import os
+from dotenv import load_dotenv
 
+load_dotenv()  # Load environment variables from .env file
 
 app = FastAPI()
+# Add the HTTPBearer instance
+security = HTTPBearer()
+# Load SECRET_TOKEN from environment variables
+SECRET_TOKEN = os.getenv('SECRET_TOKEN')
+
+def verify_token(auth_credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if auth_credentials.credentials != SECRET_TOKEN:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized access, invalid token"
+        )
 
 class Task(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the task")
@@ -86,7 +100,7 @@ def task_exists(task_id: int) -> bool:
         cursor.execute("SELECT id FROM Tasks WHERE id = ?", (task_id,))
         return cursor.fetchone() is not None
 
-@app.get("/tasks")
+@app.get("/tasks", dependencies=[Depends(verify_token)])
 def get_tasks(category: Optional[str] = Query(None, alias="category")):
     try:
         with get_db_connection() as conn:
@@ -107,7 +121,7 @@ def get_tasks(category: Optional[str] = Query(None, alias="category")):
         print(f"Failed to retrieve tasks: {str(e)}")  # Debug print statement
         raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
 
-@app.post("/tasks", status_code=201)
+@app.post("/tasks", status_code=201, dependencies=[Depends(verify_token)])
 def manage_task(task: Task):
     try:
         with get_db_connection() as conn:
@@ -130,7 +144,7 @@ def manage_task(task: Task):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
-@app.post("/feedback", status_code=201)
+@app.post("/feedback", status_code=201, dependencies=[Depends(verify_token)])
 def submit_feedback(feedback: UserFeedback):
     try:
         with get_db_connection() as conn:

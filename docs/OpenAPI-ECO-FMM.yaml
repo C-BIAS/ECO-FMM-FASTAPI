@@ -26,6 +26,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Task'
+      security:
+        - bearerAuth: []
 
     post:
       summary: Create or update a task
@@ -48,6 +50,8 @@ paths:
                     type: integer
                   message:
                     type: string
+      security:
+        - bearerAuth: []
 
   /feedback:
     post:
@@ -71,8 +75,17 @@ paths:
                     type: integer
                   message:
                     type: string
+      security:
+        - bearerAuth: []
 
 components:
+  securitySchemes:
+    bearerAuth: # Define the security scheme as HTTP Bearer
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # Specify the bearer format, if applicable (e.g., JWT)
+security:
+- bearerAuth: []
   schemas:
     Task:
       type: object
@@ -83,10 +96,13 @@ components:
           nullable: true
         title:
           type: string
+          description: Title of the task
         description:
           type: string
+          description: Description of the task
         due_date:
           type: string
+          description: Due date of the task
         status:
           type: string
           description: Status of the task
@@ -94,17 +110,18 @@ components:
           type: integer
           minimum: 1
           maximum: 5
+          description: Priority of the task, where 1 is the highest priority
         area:
           type: string
           nullable: true
-          description: The area of the task
+          description: The area of the task (e.g., personal, work)
 
     UserFeedback:
       type: object
       properties:
         user_id:
           type: integer
+          description: Unique identifier of the user
         feedback:
           type: string
-
-  # Add other schemas and security here as needed
+          description: Feedback provided by the user
