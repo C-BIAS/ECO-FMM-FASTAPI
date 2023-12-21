@@ -1,25 +1,4 @@
-@app.post("/tasks", status_code=201)
-def manage_task(task: Task):
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            if task.id and task_exists(task.id):
-                cursor.execute(
-                    "UPDATE Tasks SET title = ?, description = ?, due_date = ?, status = ?, priority = ?, area = ? WHERE id = ?",
-                    (task.title, task.description, task.due_date, task.status, task.priority, task.area, task.id)
-                )
-            else:
-                cursor.execute(
-                    "INSERT INTO Tasks (title, description, due_date, status, priority, area) VALUES (?, ?, ?, ?, ?, ?)",
-                    (task.title, task.description, task.due_date, task.status, task.priority, task.area)
-                )
-                task_id = cursor.lastrowid
-                conn.commit()  # Make sure to commit the changes
-                return {"task_id": task_id, "message": "Task created successfully."}
-    except sqlite3.IntegrityError as e:
-        raise HTTPException(status_code=400, detail="Database integrity error: Task could not be managed.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -99,9 +78,6 @@ if not check_db_exists():
     initialize_db()
     print("Database and tables are created.")
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=80, reload=False)
 
 
 def task_exists(task_id: int) -> bool:
@@ -131,7 +107,28 @@ def get_tasks(category: Optional[str] = Query(None, alias="category")):
         print(f"Failed to retrieve tasks: {str(e)}")  # Debug print statement
         raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
 
-
+@app.post("/tasks", status_code=201)
+def manage_task(task: Task):
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            if task.id and task_exists(task.id):
+                cursor.execute(
+                    "UPDATE Tasks SET title = ?, description = ?, due_date = ?, status = ?, priority = ?, area = ? WHERE id = ?",
+                    (task.title, task.description, task.due_date, task.status, task.priority, task.area, task.id)
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO Tasks (title, description, due_date, status, priority, area) VALUES (?, ?, ?, ?, ?, ?)",
+                    (task.title, task.description, task.due_date, task.status, task.priority, task.area)
+                )
+                task_id = cursor.lastrowid
+                conn.commit()  # Make sure to commit the changes
+                return {"task_id": task_id, "message": "Task created successfully."}
+    except sqlite3.IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Database integrity error: Task could not be managed.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 @app.post("/feedback", status_code=201)
 def submit_feedback(feedback: UserFeedback):
