@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
+from datetime import datetime 
 import sqlite3
 from contextlib import contextmanager
 from fastapi import Query
@@ -25,7 +26,7 @@ class Task(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the task")
     title: str
     description: str
-    due_date: str
+    due_date: datetime = Field(None, description="Due date of the task")  # Changed to datetime
     status: str = Field(..., description="Status of the task, can be used to specify 'Behavioral Prompt'")
     priority: int = Field(ge=1, le=5)
     area: Optional[str] = Field(None, description="The area of the task: personal, work, project development, custom area")
@@ -99,14 +100,15 @@ def manage_task(task: Task):
                     "UPDATE Tasks SET title = ?, description = ?, due_date = ?, status = ?, priority = ?, area = ? WHERE id = ?",
                     (task.title, task.description, task.due_date, task.status, task.priority, task.area, task.id)
                 )
+                task_id = task.id  # Assign the task ID after updating
             else:
                 cursor.execute(
                     "INSERT INTO Tasks (title, description, due_date, status, priority, area) VALUES (?, ?, ?, ?, ?, ?)",
                     (task.title, task.description, task.due_date, task.status, task.priority, task.area)
                 )
-                task_id = cursor.lastrowid
+                task_id = cursor.lastrowid  # Assign the task ID after insertion
             conn.commit()
-            return {"task_id": task_id, "message": "Task created successfully."}
+            return {"task_id": task_id, "message": "Task created or updated successfully."}  # Use task_id after it's been assigned in both conditions
     except sqlite3.IntegrityError as e:
         raise HTTPException(status_code=400, detail="Database integrity error: Task could not be managed.")
     except Exception as e:
