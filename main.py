@@ -75,6 +75,7 @@ def get_tasks(category: Optional[str] = Query(None, alias="category")):
             if category:
                 query += " WHERE status = ?"
                 params = (category,)
+            print(f"Executing query: {query} with params: {params}")  # Debug print statement
             cursor.execute(query, params)
             tasks = cursor.fetchall()
             if not tasks:
@@ -99,6 +100,7 @@ def manage_task(task: Task):
                 cursor.execute("INSERT INTO Tasks (title, description, due_date, status, priority) VALUES (?, ?, ?, ?, ?)",
                                (task.title, task.description, task.due_date, task.status, task.priority))
                 task_id = cursor.lastrowid
+                conn.commit()  # Make sure to commit the changes
                 return {"task_id": task_id, "message": "Task created successfully."}
     except sqlite3.IntegrityError as e:
         raise HTTPException(status_code=400, detail="Database integrity error: Task could not be managed.")
