@@ -1,10 +1,15 @@
 openapi: 3.0.0
-
 info:
-  title: ECO-FMM-FASTAPI API
-  version: 2.0.0
-  description: API service for ECO-FMM-FASTAPI v2.0.0
-
+  title: ECO-FMM-FASTAPI
+  version: v2.0.0
+  description: FastAPI application to manage tasks and receive feedback
+  contact:
+    name: C-BIAS ENTERPRISES
+    year: 2024
+servers:
+  - url: https://eco-fmm.replit.app
+    description: Main server
+paths:
 paths:
   /tasks:
     get:
