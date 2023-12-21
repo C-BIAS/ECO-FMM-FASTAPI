@@ -10,7 +10,6 @@ servers:
   - url: https://eco-fmm.replit.app
     description: Main server
 paths:
-paths:
   /tasks:
     get:
       summary: Retrieve a list of tasks
@@ -89,16 +88,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT # Specify the bearer format, if applicable (e.g., JWT)
-security:
-- bearerAuth: []
   schemas:
     Task:
       type: object
+      required:
+        - title
+        - description
+        - due_date
+        - status
+        - priority
       properties:
         id:
           type: integer
+          format: int64
           description: Unique ID of the task
-          nullable: true
         title:
           type: string
           description: Title of the task
@@ -107,26 +110,33 @@ security:
           description: Description of the task
         due_date:
           type: string
+          format: date-time
           description: Due date of the task
         status:
           type: string
           description: Status of the task
         priority:
           type: integer
+          description: Priority of the task, where 1 is the highest priority
           minimum: 1
           maximum: 5
-          description: Priority of the task, where 1 is the highest priority
         area:
           type: string
-          nullable: true
           description: The area of the task (e.g., personal, work)
 
     UserFeedback:
       type: object
+      required:
+        - user_id
+        - feedback
       properties:
         user_id:
           type: integer
+          format: int64
           description: Unique identifier of the user
         feedback:
           type: string
           description: Feedback provided by the user
+
+security:
+  - bearerAuth: []
