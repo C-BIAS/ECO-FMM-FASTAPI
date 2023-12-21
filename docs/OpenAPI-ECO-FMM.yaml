@@ -131,6 +131,7 @@ components:
           type: string
           format: date-time
           description: Due date of the task
+          nullable: true 
         status:
           type: string
           description: Current status of the task

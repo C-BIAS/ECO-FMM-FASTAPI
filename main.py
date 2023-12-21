@@ -26,7 +26,7 @@ class Task(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the task")
     title: str
     description: str
-    due_date: datetime = Field(None, description="Due date of the task")  # Changed to datetime
+    due_date: Optional[datetime] = Field(None, description="Due date of the task")  # Changed to datetime
     status: str = Field(..., description="Status of the task, can be used to specify 'Behavioral Prompt'")
     priority: int = Field(ge=1, le=5)
     area: Optional[str] = Field(None, description="The area of the task: personal, work, project development, custom area")
@@ -114,6 +114,32 @@ def manage_task(task: Task):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
+
+@app.get("/tasks", dependencies=[Depends(verify_token)])
+def get_tasks():
+    try:
+        with get_db_connection("tasks_db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Tasks")
+            tasks = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+            return [dict(zip(columns, task)) for task in tasks]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
+@app.get("/tasks/{task_id}", dependencies=[Depends(verify_token)])
+def get_task_by_id(task_id: int):
+    try:
+        with get_db_connection("tasks_db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Tasks WHERE id = ?", (task_id,))
+            task = cursor.fetchone()
+            if task:
+                columns = [column[0] for column in cursor.description]
+                return dict(zip(columns, task))
+            else:
+                raise HTTPException(status_code=404, detail="Task not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve task: {str(e)}")
 @app.post("/feedback", status_code=201, dependencies=[Depends(verify_token)])
 def submit_feedback(feedback: UserFeedback):
     try:
