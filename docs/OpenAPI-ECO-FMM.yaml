@@ -11,28 +11,6 @@ servers:
     description: Main server
 paths:
   /tasks:
-    get:
-      summary: Retrieve a list of tasks
-      operationId: getTasks
-      parameters:
-        - in: query
-          name: category
-          schema:
-            type: string
-          required: false
-          description: Filter tasks by status category
-      responses:
-        '200':
-          description: A list of tasks
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Task'
-      security:
-        - bearerAuth: []
-
     post:
       summary: Create or update a task
       operationId: manageTask
@@ -82,12 +60,53 @@ paths:
       security:
         - bearerAuth: []
 
+  /behaviors:
+    post:
+      summary: Add a new behavior
+      operationId: addBehavior
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Behavior'
+      responses:
+        '201':
+          description: Behavior added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  behavior_id:
+                    type: integer
+                  message:
+                    type: string
+      security:
+        - bearerAuth: []
+
+    get:
+      summary: Retrieve a list of behaviors
+      operationId: getBehaviors
+      responses:
+        '200':
+          description: A list of behaviors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Behavior'
+      security:
+        - bearerAuth: []
+
 components:
   securitySchemes:
     bearerAuth: # Define the security scheme as HTTP Bearer
       type: http
       scheme: bearer
       bearerFormat: JWT # Specify the bearer format, if applicable (e.g., JWT)
+
   schemas:
     Task:
       type: object
@@ -114,7 +133,7 @@ components:
           description: Due date of the task
         status:
           type: string
-          description: Status of the task
+          description: Current status of the task
         priority:
           type: integer
           description: Priority of the task, where 1 is the highest priority
@@ -138,5 +157,19 @@ components:
           type: string
           description: Feedback provided by the user
 
+    Behavior:
+      type: object
+      required:
+        - description
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique ID of the behavior
+        description:
+          type: string
+          description: Description of the behavior
+
 security:
   - bearerAuth: []
+
