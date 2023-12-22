@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: ECO-FMM-FASTAPI
-  version: v2.0.0
+  version: v2.1.0
   description: FastAPI application to manage tasks and receive feedback
   contact:
     name: C-BIAS ENTERPRISES
@@ -49,7 +49,7 @@ paths:
       security:
         - bearerAuth: []
 
-  /tasks/{task_id}:
+/tasks/{task_id}:
     get:
       summary: Retrieve a task by ID
       operationId: getTaskById
@@ -71,7 +71,6 @@ paths:
           description: Task not found
       security:
         - bearerAuth: []
-
   /feedback:
     post:
       summary: Submit user feedback
@@ -96,7 +95,6 @@ paths:
                     type: string
       security:
         - bearerAuth: []
-
   /behaviors:
     post:
       summary: Add a new behavior
@@ -121,7 +119,6 @@ paths:
                     type: string
       security:
         - bearerAuth: []
-
     get:
       summary: Retrieve a list of behaviors
       operationId: getBehaviors
@@ -136,23 +133,15 @@ paths:
                   $ref: '#/components/schemas/Behavior'
       security:
         - bearerAuth: []
-
 components:
   securitySchemes:
     bearerAuth: 
       type: http
       scheme: bearer
       bearerFormat: JWT
-
   schemas:
     Task:
       type: object
-      required:
-        - title
-        - description
-        - due_date
-        - status
-        - priority
       properties:
         id:
           type: integer
@@ -166,7 +155,7 @@ components:
           description: Description of the task
         due_date:
           type: string
-          format: date-time
+          format: date
           description: Due date of the task
           nullable: true 
         status:
@@ -174,12 +163,18 @@ components:
           description: Current status of the task
         priority:
           type: integer
-          description: Priority of the task, where 1 is the highest priority
+          description: Priority of the task, where 1 is the highest priority and 5 is the lowest
           minimum: 1
           maximum: 5
         area:
           type: string
           description: The area of the task (e.g., personal, work)
+          nullable: true
+      required:
+        - title
+        - description
+        - status
+        - priority
     UserFeedback:
       type: object
       required:
@@ -195,8 +190,6 @@ components:
           description: Feedback provided by the user
     Behavior:
       type: object
-      required:
-        - description
       properties:
         id:
           type: integer
@@ -205,6 +198,8 @@ components:
         description:
           type: string
           description: Description of the behavior
-
+      required:
+        - description
 security:
   - bearerAuth: []
+

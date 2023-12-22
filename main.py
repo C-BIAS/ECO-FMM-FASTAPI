@@ -222,7 +222,7 @@ def get_behaviors():
 
 @app.get("/")
 def read_root():
-  return {"message": "Welcome to the ECO-FMM-FASTAPI v2.0.0 API!"}
+  return {"message": "Welcome to the ECO-FMM-FASTAPI v2.1.0 API!"}
 
 if __name__ == "__main__":
     import uvicorn
