@@ -11,6 +11,8 @@ from contextlib import contextmanager
 from fastapi import Query
 import os
 from dotenv import load_dotenv
+from fastapi.responses import FileResponse
+
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -44,6 +46,13 @@ app.add_middleware(
 )
 
 # Middleware to log incoming requests
+@app.get("/download-logs")
+def download_logs():
+    log_file_path = 'database_actions.log'
+    return FileResponse(log_file_path, filename="database_actions.log", media_type='text/plain')
+
+
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logging.info(f"Incoming request: {request.method} {request.url}")

@@ -10,6 +10,22 @@ servers:
   - url: https://eco-fmm.replit.app
     description: Main server
 paths:
+
+  /download-logs:
+  get:
+    summary: Download logs
+    description: Allows the client to download the 'database_actions.log' file for debugging purposes.
+    responses:
+      '200':
+        description: A log file to download.
+        content:
+          text/plain:
+            schema:
+              type: string
+              format: binary
+      '500':
+        description: An error occurred while trying to serve the log file.
+
   /tasks:
     post:
       summary: Create or update a task
