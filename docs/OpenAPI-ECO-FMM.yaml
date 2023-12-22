@@ -12,6 +12,7 @@ servers:
 paths:
   /download-logs:
     get:
+      operationId: downloadLogs
       summary: Download logs
       description: Allows the client to download the 'database_actions.log' file for debugging purposes.
       responses:
@@ -112,32 +113,6 @@ paths:
                     description: Response message
       security:
         - bearerAuth: []
-  /logs:
-    get:
-      operationId: getLogContents
-      summary: Get the contents of the log file
-      description: Retrieve the error log contents from the generated log file.
-      responses:
-        "200":
-          description: Log contents retrieved successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  log_contents:
-                    type: string
-                    description: The contents of the log file.
-        "500":
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  detail:
-                    type: string
-                    description: Detailed error message.
   /behaviors:
     post:
       summary: Add a new behavior
@@ -149,3 +124,67 @@ paths:
             schema:
               $ref: "#/components/schemas/Behavior"
       responses:
+        "201":
+          description: Behavior added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  behavior_id:
+                    type: integer
+                    description: Unique ID of the behavior
+                  message:
+                    type: string
+                    description: Response message
+      security:
+        - bearerAuth: []
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique ID of the task
+        title:
+          type: string
+          description: Title of the task
+        description:
+          type: string
+          description: Description of the task
+        due_date:
+          type: string
+          description: Due date of the task in DD-MM-YYYY format
+        status:
+          type: string
+          description: Status of the task
+        priority:
+          type: integer
+          description: Priority of the task
+        area:
+          type: string
+          description: Area of the task
+    UserFeedback:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          description: ID of the user providing feedback
+        feedback:
+          type: string
+          description: Feedback content
+    Behavior:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique ID of the behavior
+        description:
+          type: string
+          description: Description of the behavior
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
