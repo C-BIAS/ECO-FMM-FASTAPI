@@ -95,30 +95,31 @@ paths:
       security:
         - bearerAuth: []
   /logs:
-  get:
-    summary: Get the contents of the log file
-    description: Retrieve the error log contents from the generated log file.
-    responses:
-      '200':
-        description: Log contents retrieved successfully.
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                log_contents:
-                  type: string
-                  description: The contents of the log file.
-      '500':
-        description: Internal Server Error
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                detail:
-                  type: string
-                  description: Detailed error message.
+    get:
+      operationId: getLogContents  # Corrected
+      summary: Get the contents of the log file
+      description: Retrieve the error log contents from the generated log file.
+      responses:
+        '200':
+          description: Log contents retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  log_contents:
+                    type: string
+                    description: The contents of the log file.
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    description: Detailed error message.
   /behaviors:
     post:
       summary: Add a new behavior
