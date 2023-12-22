@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
+import logging
 from datetime import datetime 
 import sqlite3
 from contextlib import contextmanager
@@ -10,6 +11,15 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env file
+
+# Set up logger to write to file with the appropriate format
+logging.basicConfig(filename='database_actions.log',
+                    filemode='a', # Append to the log file if it exists
+                    level=logging.INFO,
+                    format='%(asctime)s - %(message)s')
+def log_action(action: str):
+  logging.info(action)
+
 
 app = FastAPI()
 security = HTTPBearer()
@@ -26,10 +36,25 @@ class Task(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the task")
     title: str
     description: str
-    due_date: Optional[datetime] = Field(None, description="Due date of the task")  # Changed to datetime
+    due_date: Optional[str] = Field(None, description="Due date of the task in DD-MM-YYYY format")
     status: str = Field(..., description="Status of the task, can be used to specify 'Behavioral Prompt'")
     priority: int = Field(ge=1, le=5)
     area: Optional[str] = Field(None, description="The area of the task: personal, work, project development, custom area")
+
+@classmethod
+def parse_due_date(cls, due_date: str):
+    if due_date is None:
+        return due_date
+    try:
+        return datetime.strptime(due_date, '%d-%m-%Y')
+    except ValueError:
+        raise ValueError('due_date must be in the format DD-MM-YYYY')
+
+def __init__(__pydantic_self__, **data):
+    if 'due_date' in data:
+        data['due_date'] =__pydantic_self__.parse_due_date(data['due_date'])
+    super().__init__(**data)
+
 
 class UserFeedback(BaseModel):
     user_id: int
@@ -38,14 +63,17 @@ class UserFeedback(BaseModel):
 class Behavior(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the behavior")
     description: str
+  
 
 @contextmanager
 def get_db_connection(database: str):
+    log_action(f'Connecting to database: {database}')
     conn = sqlite3.connect(f'{database}.sqlite')
     try:
         yield conn
     finally:
         conn.close()
+        log_action(f'Disconnected from database: {database}')
 
 def initialize_databases():
     # Initialize tasks_db.sqlite
@@ -101,17 +129,21 @@ def manage_task(task: Task):
                     (task.title, task.description, task.due_date, task.status, task.priority, task.area, task.id)
                 )
                 task_id = task.id  # Assign the task ID after updating
+                log_action(f"Updated Task with ID {task_id}")
             else:
                 cursor.execute(
                     "INSERT INTO Tasks (title, description, due_date, status, priority, area) VALUES (?, ?, ?, ?, ?, ?)",
                     (task.title, task.description, task.due_date, task.status, task.priority, task.area)
                 )
                 task_id = cursor.lastrowid  # Assign the task ID after insertion
+                log_action(f"Inserted new Task with ID {task_id}")
             conn.commit()
             return {"task_id": task_id, "message": "Task created or updated successfully."}  # Use task_id after it's been assigned in both conditions
     except sqlite3.IntegrityError as e:
+        log_action(f"Database integrity error: Task could not be managed. Error: {e}")
         raise HTTPException(status_code=400, detail="Database integrity error: Task could not be managed.")
     except Exception as e:
+        log_action(f"Server error: {e}")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
@@ -126,6 +158,7 @@ def get_tasks():
             return [dict(zip(columns, task)) for task in tasks]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
+      
 @app.get("/tasks/{task_id}", dependencies=[Depends(verify_token)])
 def get_task_by_id(task_id: int):
     try:
@@ -140,8 +173,10 @@ def get_task_by_id(task_id: int):
                 raise HTTPException(status_code=404, detail="Task not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve task: {str(e)}")
+      
 @app.post("/feedback", status_code=201, dependencies=[Depends(verify_token)])
 def submit_feedback(feedback: UserFeedback):
+    log_action(f"Feedback submission endpoint called with feedback: {feedback.json()}")
     try:
         with get_db_connection("tasks_db") as conn:
             cursor = conn.cursor()
@@ -149,12 +184,16 @@ def submit_feedback(feedback: UserFeedback):
                            (feedback.user_id, feedback.feedback))
             feedback_id = cursor.lastrowid
             conn.commit()
-            return {"feedback_id": feedback_id, "message": "Feedback submitted successfully."}
+        log_action(f"Feedback with ID {feedback_id} submitted successfully")
+        return {"feedback_id": feedback_id, "message": "Feedback submitted successfully."}
     except Exception as e:
+        log_action(f"Failed to submit feedback: {e}", level=logging.ERROR)
         raise HTTPException(status_code=500, detail=f"Failed to submit feedback: {str(e)}")
+
 
 @app.post("/behaviors", status_code=201, dependencies=[Depends(verify_token)])
 def add_behavior(behavior: Behavior):
+    log_action(f"Add behavior endpoint called with behavior: {behavior.json()}")
     try:
         with get_db_connection("behavior_db") as conn:
             cursor = conn.cursor()
@@ -162,9 +201,12 @@ def add_behavior(behavior: Behavior):
                            (behavior.description,))
             behavior_id = cursor.lastrowid
             conn.commit()
-            return {"behavior_id": behavior_id, "message": "Behavior added successfully."}
+        log_action(f"Behavior with ID {behavior_id} added successfully")
+        return {"behavior_id": behavior_id, "message": "Behavior added successfully."}
     except Exception as e:
+        log_action(f"Failed to add behavior: {e}", level=logging.ERROR)
         raise HTTPException(status_code=500, detail=f"Failed to add behavior: {str(e)}")
+
 
 @app.get("/behaviors", dependencies=[Depends(verify_token)])
 def get_behaviors():

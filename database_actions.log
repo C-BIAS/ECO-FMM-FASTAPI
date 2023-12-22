@@ -1,0 +1,4 @@
+2023-12-22 07:09:10,243 - Connecting to database: tasks_db
+2023-12-22 07:09:10,244 - Disconnected from database: tasks_db
+2023-12-22 07:09:10,244 - Connecting to database: behavior_db
+2023-12-22 07:09:10,244 - Disconnected from database: behavior_db
