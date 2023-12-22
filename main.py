@@ -1,3 +1,11 @@
+@app.get("/logs")
+def read_logs():
+    try:
+        with open('database_actions.log', 'r') as file:
+            log_contents = file.read()
+        return {"log_contents": log_contents}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read logs: {str(e)}")
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field, field_validator
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -219,6 +227,15 @@ def get_behaviors():
             return [dict(zip(columns, behavior)) for behavior in behaviors]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve behaviors: {str(e)}")
+
+@app.get("/logs")
+def read_logs():
+    try:
+        with open('database_actions.log', 'r') as file:
+            log_contents = file.read()
+        return {"log_contents": log_contents}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read logs: {str(e)}")
 
 @app.get("/")
 def read_root():
