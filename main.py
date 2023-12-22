@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field, field_validator
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 from typing import Optional
 import logging
 from datetime import datetime 
@@ -25,12 +27,29 @@ app = FastAPI()
 security = HTTPBearer()
 SECRET_TOKEN = os.getenv('SECRET_TOKEN')
 
+
 def verify_token(auth_credentials: HTTPAuthorizationCredentials = Depends(security)):
     if auth_credentials.credentials != SECRET_TOKEN:
         raise HTTPException(
             status_code=403,
             detail="Unauthorized access, invalid token"
         )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Middleware to log incoming requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logging.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    logging.info(f"Response status: {response.status_code}")
+    return response
 
 class Task(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the task")
