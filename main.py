@@ -19,10 +19,10 @@ load_dotenv()  # Load environment variables from .env file
 # Set up logger to write to file with the appropriate format
 logging.basicConfig(filename='database_actions.log',
                     filemode='a', # Append to the log file if it exists
-                    level=logging.INFO,
+                    level=logging.ERROR,
                     format='%(asctime)s - %(message)s')
 def log_action(action: str):
-  logging.info(action)
+  logging.error(action)
 
 
 app = FastAPI()
@@ -37,13 +37,6 @@ def verify_token(auth_credentials: HTTPAuthorizationCredentials = Depends(securi
             detail="Unauthorized access, invalid token"
         )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Middleware to log incoming requests
 @app.get("/download-logs")
@@ -52,13 +45,6 @@ def download_logs():
     return FileResponse(log_file_path, filename="database_actions.log", media_type='text/plain')
 
 
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logging.info(f"Incoming request: {request.method} {request.url}")
-    response = await call_next(request)
-    logging.info(f"Response status: {response.status_code}")
-    return response
 
 class Task(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the task")
@@ -95,13 +81,11 @@ class Behavior(BaseModel):
 
 @contextmanager
 def get_db_connection(database: str):
-    log_action(f'Connecting to database: {database}')
     conn = sqlite3.connect(f'{database}.sqlite')
     try:
         yield conn
     finally:
         conn.close()
-        log_action(f'Disconnected from database: {database}')
 
 def initialize_databases():
     # Initialize tasks_db.sqlite
@@ -157,14 +141,12 @@ def manage_task(task: Task):
                     (task.title, task.description, task.due_date, task.status, task.priority, task.area, task.id)
                 )
                 task_id = task.id  # Assign the task ID after updating
-                log_action(f"Updated Task with ID {task_id}")
             else:
                 cursor.execute(
                     "INSERT INTO Tasks (title, description, due_date, status, priority, area) VALUES (?, ?, ?, ?, ?, ?)",
                     (task.title, task.description, task.due_date, task.status, task.priority, task.area)
                 )
                 task_id = cursor.lastrowid  # Assign the task ID after insertion
-                log_action(f"Inserted new Task with ID {task_id}")
             conn.commit()
             return {"task_id": task_id, "message": "Task created or updated successfully."}  # Use task_id after it's been assigned in both conditions
     except sqlite3.IntegrityError as e:
@@ -212,7 +194,6 @@ def submit_feedback(feedback: UserFeedback):
                            (feedback.user_id, feedback.feedback))
             feedback_id = cursor.lastrowid
             conn.commit()
-        log_action(f"Feedback with ID {feedback_id} submitted successfully")
         return {"feedback_id": feedback_id, "message": "Feedback submitted successfully."}
     except Exception as e:
         log_action(f"Failed to submit feedback: {e}", level=logging.ERROR)
@@ -221,7 +202,6 @@ def submit_feedback(feedback: UserFeedback):
 
 @app.post("/behaviors", status_code=201, dependencies=[Depends(verify_token)])
 def add_behavior(behavior: Behavior):
-    log_action(f"Add behavior endpoint called with behavior: {behavior.json()}")
     try:
         with get_db_connection("behavior_db") as conn:
             cursor = conn.cursor()
@@ -229,7 +209,6 @@ def add_behavior(behavior: Behavior):
                            (behavior.description,))
             behavior_id = cursor.lastrowid
             conn.commit()
-        log_action(f"Behavior with ID {behavior_id} added successfully")
         return {"behavior_id": behavior_id, "message": "Behavior added successfully."}
     except Exception as e:
         log_action(f"Failed to add behavior: {e}", level=logging.ERROR)
