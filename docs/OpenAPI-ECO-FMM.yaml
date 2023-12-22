@@ -10,22 +10,20 @@ servers:
   - url: https://eco-fmm.replit.app
     description: Main server
 paths:
-
   /download-logs:
-  get:
-    summary: Download logs
-    description: Allows the client to download the 'database_actions.log' file for debugging purposes.
-    responses:
-      '200':
-        description: A log file to download.
-        content:
-          text/plain:
-            schema:
-              type: string
-              format: binary
-      '500':
-        description: An error occurred while trying to serve the log file.
-
+    get:
+      summary: Download logs
+      description: Allows the client to download the 'database_actions.log' file for debugging purposes.
+      responses:
+        "200":
+          description: A log file to download.
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+        "500":
+          description: An error occurred while trying to serve the log file.
   /tasks:
     post:
       summary: Create or update a task
@@ -46,8 +44,10 @@ paths:
                 properties:
                   task_id:
                     type: integer
+                    description: Unique ID of the task
                   message:
                     type: string
+                    description: Response message
       security:
         - bearerAuth: []
     get:
@@ -106,17 +106,19 @@ paths:
                 properties:
                   feedback_id:
                     type: integer
+                    description: Unique ID of the feedback
                   message:
                     type: string
+                    description: Response message
       security:
         - bearerAuth: []
   /logs:
     get:
-      operationId: getLogContents  # Corrected
+      operationId: getLogContents
       summary: Get the contents of the log file
       description: Retrieve the error log contents from the generated log file.
       responses:
-        '200':
+        "200":
           description: Log contents retrieved successfully.
           content:
             application/json:
@@ -126,7 +128,7 @@ paths:
                   log_contents:
                     type: string
                     description: The contents of the log file.
-        '500':
+        "500":
           description: Internal Server Error
           content:
             application/json:
@@ -147,99 +149,3 @@ paths:
             schema:
               $ref: "#/components/schemas/Behavior"
       responses:
-        "201":
-          description: Behavior added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  behavior_id:
-                    type: integer
-                  message:
-                    type: string
-      security:
-        - bearerAuth: []
-    get:
-      summary: Retrieve a list of behaviors
-      operationId: getBehaviors
-      responses:
-        "200":
-          description: A list of behaviors
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Behavior"
-      security:
-        - bearerAuth: []
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  schemas:
-    Task:
-      type: object
-      required:
-        - title
-        - description
-        - due_date
-        - status
-        - priority
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: Unique ID of the task
-        title:
-          type: string
-          description: Title of the task
-        description:
-          type: string
-          description: Description of the task
-        due_date:
-          type: string
-          format: date-time
-          description: Due date of the task
-          nullable: true
-        status:
-          type: string
-          description: Current status of the task
-        priority:
-          type: integer
-          description: Priority of the task, where 1 is the highest priority
-          minimum: 1
-          maximum: 5
-        area:
-          type: string
-          description: The area of the task (e.g., personal, work)
-    UserFeedback:
-      type: object
-      required:
-        - user_id
-        - feedback
-      properties:
-        user_id:
-          type: integer
-          format: int64
-          description: Unique identifier of the user
-        feedback:
-          type: string
-          description: Feedback provided by the user
-    Behavior:
-      type: object
-      required:
-        - description
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: Unique ID of the behavior
-        description:
-          type: string
-          description: Description of the behavior
-security:
-  - bearerAuth: []
