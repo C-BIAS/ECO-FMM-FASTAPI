@@ -19,9 +19,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: "#/components/schemas/Task"
       responses:
-        '201':
+        "201":
           description: Task created or updated
           content:
             application/json:
@@ -38,18 +38,17 @@ paths:
       summary: Retrieve a list of tasks
       operationId: getTasks
       responses:
-        '200':
+        "200":
           description: A list of tasks
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Task'
+                  $ref: "#/components/schemas/Task"
       security:
         - bearerAuth: []
-
-/tasks/{task_id}:
+  /tasks/{task_id}:
     get:
       summary: Retrieve a task by ID
       operationId: getTaskById
@@ -61,13 +60,13 @@ paths:
             type: integer
           description: Unique ID of the task
       responses:
-        '200':
+        "200":
           description: Detailed information about a task
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
-        '404':
+                $ref: "#/components/schemas/Task"
+        "404":
           description: Task not found
       security:
         - bearerAuth: []
@@ -80,9 +79,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserFeedback'
+              $ref: "#/components/schemas/UserFeedback"
       responses:
-        '201':
+        "201":
           description: Feedback received
           content:
             application/json:
@@ -104,9 +103,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Behavior'
+              $ref: "#/components/schemas/Behavior"
       responses:
-        '201':
+        "201":
           description: Behavior added successfully
           content:
             application/json:
@@ -123,25 +122,31 @@ paths:
       summary: Retrieve a list of behaviors
       operationId: getBehaviors
       responses:
-        '200':
+        "200":
           description: A list of behaviors
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Behavior'
+                  $ref: "#/components/schemas/Behavior"
       security:
         - bearerAuth: []
 components:
   securitySchemes:
-    bearerAuth: 
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
   schemas:
     Task:
       type: object
+      required:
+        - title
+        - description
+        - due_date
+        - status
+        - priority
       properties:
         id:
           type: integer
@@ -155,26 +160,20 @@ components:
           description: Description of the task
         due_date:
           type: string
-          format: date
+          format: date-time
           description: Due date of the task
-          nullable: true 
+          nullable: true
         status:
           type: string
           description: Current status of the task
         priority:
           type: integer
-          description: Priority of the task, where 1 is the highest priority and 5 is the lowest
+          description: Priority of the task, where 1 is the highest priority
           minimum: 1
           maximum: 5
         area:
           type: string
           description: The area of the task (e.g., personal, work)
-          nullable: true
-      required:
-        - title
-        - description
-        - status
-        - priority
     UserFeedback:
       type: object
       required:
@@ -190,6 +189,8 @@ components:
           description: Feedback provided by the user
     Behavior:
       type: object
+      required:
+        - description
       properties:
         id:
           type: integer
@@ -198,8 +199,5 @@ components:
         description:
           type: string
           description: Description of the behavior
-      required:
-        - description
 security:
   - bearerAuth: []
-
