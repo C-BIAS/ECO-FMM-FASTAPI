@@ -80,10 +80,10 @@ class Task(BaseModel):
         except ValueError:
             raise ValueError('due_date must be in the format DD-MM-YYYY')
 
-    def __init__(__pydantic_self__, data):
+    def __init__(__pydantic_self__, **data):
         if 'due_date' in data:
             data['due_date'] =__pydantic_self__.parse_due_date(data['due_date'])
-        super().__init__(data)
+        super().__init__(**data)
 
 class UserFeedback(BaseModel):
     user_id: int
