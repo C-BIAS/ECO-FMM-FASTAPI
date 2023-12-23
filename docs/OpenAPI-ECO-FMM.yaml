@@ -1,11 +1,8 @@
-Certainly! Here's the refactored YAML schema incorporating the recommendations:
-
-```yaml
 openapi: 3.0.0
 info:
   title: ECO-FMM-FASTAPI
-  version: v2.1.1  # Ensure version matches your FastAPI application
-  description: FastAPI application to manage tasks, behaviors, and receive feedback
+  version: v2.1.0
+  description: FastAPI application to manage tasks and receive feedback
   contact:
     name: C-BIAS ENTERPRISES
     year: 2024
@@ -135,59 +132,72 @@ paths:
                   $ref: "#/components/schemas/Behavior"
       security:
         - bearerAuth: []
-  # Added endpoints for /memgen
-  /memgen:
-    post:
-      summary: Create a MEMGEN record
-      operationId: createMemgen
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Memgen"
-      responses:
-        "201":
-          description: MEMGEN record created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  memgen_id:
-                    type: integer
-                  message:
-                    type: string
-      security:
-        - bearerAuth: []
-    get:
-      summary: Retrieve all MEMGEN records
-      operationId: getMemgenRecords
-      responses:
-        "200":
-          description: A list of MEMGEN records
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Memgen"
-      security:
-        - bearerAuth: []
-  /memgen/{memgen_id}:
-    get:
-      summary: Retrieve a MEMGEN record by ID
-      operationId: getMemgenById
-      parameters:
-        - in: path
-          name: memgen_id
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Detailed information about a MEMGEN record
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Mem
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Task:
+      type: object
+      required:
+        - title
+        - description
+        - due_date
+        - status
+        - priority
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique ID of the task
+        title:
+          type: string
+          description: Title of the task
+        description:
+          type: string
+          description: Description of the task
+        due_date:
+          type: string
+          format: date-time
+          description: Due date of the task
+          nullable: true
+        status:
+          type: string
+          description: Current status of the task
+        priority:
+          type: integer
+          description: Priority of the task, where 1 is the highest priority
+          minimum: 1
+          maximum: 5
+        area:
+          type: string
+          description: The area of the task (e.g., personal, work)
+    UserFeedback:
+      type: object
+      required:
+        - user_id
+        - feedback
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: Unique identifier of the user
+        feedback:
+          type: string
+          description: Feedback provided by the user
+    Behavior:
+      type: object
+      required:
+        - description
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique ID of the behavior
+        description:
+          type: string
+          description: Description of the behavior
+security:
+  - bearerAuth: []
