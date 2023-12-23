@@ -1,25 +1,22 @@
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 import logging
-from datetime import datetime 
+from datetime import datetime
 import sqlite3
 from contextlib import contextmanager
-from fastapi import Query
 import os
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env file
 
 # Set up logger to write to file with the appropriate format
-logging.basicConfig(filename='database_actions.log',
-                    filemode='a', # Append to the log file if it exists
-                    level=logging.INFO,
-                    format='%(asctime)s - %(message)s')
-def log_action(action: str):
-  logging.info(action)
+logging.basicConfig(filename='database_actions.log', filemode='a',  # Append to the log file if it exists
+                    level=logging.INFO, format='%(asctime)s - %(message)s')
 
+def log_action(action: str):
+    logging.info(action)
 
 app = FastAPI()
 security = HTTPBearer()
@@ -41,20 +38,19 @@ class Task(BaseModel):
     priority: int = Field(ge=1, le=5)
     area: Optional[str] = Field(None, description="The area of the task: personal, work, project development, custom area")
 
-@classmethod
-def parse_due_date(cls, due_date: str):
-    if due_date is None:
-        return due_date
-    try:
-        return datetime.strptime(due_date, '%d-%m-%Y')
-    except ValueError:
-        raise ValueError('due_date must be in the format DD-MM-YYYY')
+    @classmethod
+    def parse_due_date(cls, due_date: str):
+        if due_date is None:
+            return due_date
+        try:
+            return datetime.strptime(due_date, '%d-%m-%Y')
+        except ValueError:
+            raise ValueError('due_date must be in the format DD-MM-YYYY')
 
-def __init__(__pydantic_self__, **data):
-    if 'due_date' in data:
-        data['due_date'] =__pydantic_self__.parse_due_date(data['due_date'])
-    super().__init__(**data)
-
+    def __init__(__pydantic_self__, data):
+        if 'due_date' in data:
+            data['due_date'] = __pydantic_self__.parse_due_date(data['due_date'])
+        super().__init__(data)
 
 class UserFeedback(BaseModel):
     user_id: int
@@ -63,7 +59,33 @@ class UserFeedback(BaseModel):
 class Behavior(BaseModel):
     id: Optional[int] = Field(None, description="Unique ID of the behavior")
     description: str
-  
+
+# Additional models for new tables
+class UserInteraction(BaseModel):
+    id: Optional[int] = Field(None, description="Unique ID of the user interaction")
+    user_id: int
+    interaction: str
+
+class BehaviorAnnotation(BaseModel):
+    id: Optional[int] = Field(None, description="Unique ID of the behavior annotation")
+    behavior_id: int
+    annotation: str
+
+class APIChange(BaseModel):
+    id: Optional[int] = Field(None, description="Unique ID of the API change")
+    timestamp: datetime
+    change_description: str
+
+class SelfEvolutionLog(BaseModel):
+    id: Optional[int] = Field(None, description="Unique ID of the self-evolution log")
+    timestamp: datetime
+    log_entry: str
+
+class Memgen(BaseModel):
+  id: Optional[int] = Field(None, description="Unique ID of the MEMGEN record")
+  field1: str
+  field2: str
+
 
 @contextmanager
 def get_db_connection(database: str):
@@ -108,9 +130,42 @@ def initialize_databases():
                 description TEXT NOT NULL
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS UserInteractions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                interaction TEXT NOT NULL
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS BehaviorAnnotations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                behavior_id INTEGER NOT NULL,
+                annotation TEXT NOT NULL
+            )
+        ''')
         conn.commit()
 
-initialize_databases() # Call the function to initialize both databases
+    # Initialize MEMGEN.sqlite
+    with get_db_connection("memgen_db") as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS APIChanges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                change_description TEXT NOT NULL
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS SelfEvolutionLogs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                log_entry TEXT NOT NULL
+            )
+        ''')
+        conn.commit()
+
+initialize_databases()  # Call the function to initialize both databases
 
 def task_exists(task_id: int, database: str = "tasks_db") -> bool:
     with get_db_connection(database) as conn:
@@ -146,7 +201,6 @@ def manage_task(task: Task):
         log_action(f"Server error: {e}")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
-
 @app.get("/tasks", dependencies=[Depends(verify_token)])
 def get_tasks():
     try:
@@ -158,7 +212,7 @@ def get_tasks():
             return [dict(zip(columns, task)) for task in tasks]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve tasks: {str(e)}")
-      
+
 @app.get("/tasks/{task_id}", dependencies=[Depends(verify_token)])
 def get_task_by_id(task_id: int):
     try:
@@ -173,23 +227,21 @@ def get_task_by_id(task_id: int):
                 raise HTTPException(status_code=404, detail="Task not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve task: {str(e)}")
-      
+
 @app.post("/feedback", status_code=201, dependencies=[Depends(verify_token)])
 def submit_feedback(feedback: UserFeedback):
     log_action(f"Feedback submission endpoint called with feedback: {feedback.json()}")
     try:
         with get_db_connection("tasks_db") as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO Feedback (user_id, feedback) VALUES (?, ?)", 
-                           (feedback.user_id, feedback.feedback))
+            cursor.execute("INSERT INTO Feedback (user_id, feedback) VALUES (?, ?)", (feedback.user_id, feedback.feedback))
             feedback_id = cursor.lastrowid
             conn.commit()
-        log_action(f"Feedback with ID {feedback_id} submitted successfully")
-        return {"feedback_id": feedback_id, "message": "Feedback submitted successfully."}
+            log_action(f"Feedback with ID {feedback_id} submitted successfully")
+            return {"feedback_id": feedback_id, "message": "Feedback submitted successfully."}
     except Exception as e:
         log_action(f"Failed to submit feedback: {e}", level=logging.ERROR)
         raise HTTPException(status_code=500, detail=f"Failed to submit feedback: {str(e)}")
-
 
 @app.post("/behaviors", status_code=201, dependencies=[Depends(verify_token)])
 def add_behavior(behavior: Behavior):
@@ -197,16 +249,14 @@ def add_behavior(behavior: Behavior):
     try:
         with get_db_connection("behavior_db") as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO Behavior (description) VALUES (?)", 
-                           (behavior.description,))
+            cursor.execute("INSERT INTO Behavior (description) VALUES (?)", (behavior.description,))
             behavior_id = cursor.lastrowid
             conn.commit()
-        log_action(f"Behavior with ID {behavior_id} added successfully")
-        return {"behavior_id": behavior_id, "message": "Behavior added successfully."}
+            log_action(f"Behavior with ID {behavior_id} added successfully")
+            return {"behavior_id": behavior_id, "message": "Behavior added successfully."}
     except Exception as e:
         log_action(f"Failed to add behavior: {e}", level=logging.ERROR)
         raise HTTPException(status_code=500, detail=f"Failed to add behavior: {str(e)}")
-
 
 @app.get("/behaviors", dependencies=[Depends(verify_token)])
 def get_behaviors():
@@ -220,9 +270,73 @@ def get_behaviors():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve behaviors: {str(e)}")
 
+# Add the new API endpoints and CRUD operations for the new tables here
+# For example, to add a user interaction:
+@app.post("/user_interactions", status_code=201, dependencies=[Depends(verify_token)])
+def add_user_interaction(interaction: UserInteraction):
+    # Implementation for adding a user interaction
+    pass
+  
+
+# ... (additional CRUD operations for new tables)
+@app.post("/memgen", status_code=201)
+def create_memgen(memgen: Memgen):
+    with get_db_connection("memgen_db") as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO Memgen (name, description) VALUES (?, ?)",
+            (memgen.name, memgen.description)
+        )
+        memgen_id = cursor.lastrowid
+        conn.commit()
+    return {"memgen_id": memgen_id, "message": "Memgen created successfully."}
+  
+@app.get("/memgen", dependencies=[Depends(verify_token)])
+def get_memgen_records():
+    try:
+        with get_db_connection("memgen_db") as conn:  # Replace "memgen_db" with the actual name of your database
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Memgen")  # Replace "Memgen" with the actual name of your table
+            records = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+            return [dict(zip(columns, record)) for record in records]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve MEMGEN records: {str(e)}")
+
+@app.get("/memgen/{memgen_id}")
+def get_memgen_by_id(memgen_id: int):
+    with get_db_connection("memgen_db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Memgen WHERE id = ?", (memgen_id,))
+        memgen = cursor.fetchone()
+        if memgen:
+            return memgen
+        else:
+            raise HTTPException(status_code=404, detail="Memgen not found")
+          
+@app.put("/memgen/{memgen_id}")
+def update_memgen(memgen_id: int, memgen: Memgen):
+    with get_db_connection("memgen_db") as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE Memgen SET name = ?, description = ? WHERE id = ?",
+            (memgen.name, memgen.description, memgen_id)
+        )
+        conn.commit()
+    return {"memgen_id": memgen_id, "message": "Memgen updated successfully."}
+
+@app.delete("/memgen/{memgen_id}")
+def delete_memgen(memgen_id: int):
+    with get_db_connection("memgen_db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Memgen WHERE id = ?", (memgen_id,))
+        conn.commit()
+    return {"message": "Memgen deleted successfully."}
+  
+
 @app.get("/")
 def read_root():
-  return {"message": "Welcome to the ECO-FMM-FASTAPI v2.1.0 API!"}
+    return {"message": "Welcome to the ECO-FMM-FASTAPI v2.1.1 API!"}
 
 if __name__ == "__main__":
     import uvicorn
