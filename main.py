@@ -1,17 +1,45 @@
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field, field_validator
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.requests import Request
-from typing import Optional
 import logging
-from datetime import datetime 
+import os
 import sqlite3
 from contextlib import contextmanager
-from fastapi import Query
-import os
+from datetime import datetime
+from typing import Optional
+
 from dotenv import load_dotenv
+from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
+                     HTTPAuthorizationCredentials, security)
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+from starlette.requests import Request
+
+import spacy  # This is a third-party import and should be with the above group 
+from langdetect import detect  # This is a third-party import and should be with the above group
+
+# Load SpaCy models for English and Spanish
+nlp_en = spacy.load("en_core_web_sm")
+nlp_es = spacy.load("es_core_news_sm")
+router = APIRouter()
+class TextData(BaseModel):
+    text: str
+def detect_language(text: str) -> str:
+    try:
+        # Use langdetect to determine the language of the text
+        return detect(text)
+    except:
+        raise HTTPException(status_code=400, detail="Language detection failed")
+def extract_hashtags(text: str, language: str) -> list:
+    if language == "en":
+        doc = nlp_en(text)
+    elif language == "es":
+        doc = nlp_es(text)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported language for hashtag generation")
+    # Extract nouns and proper nouns as hashtags
+    hashtags = [f"#{token.text}" for token in doc if token.pos_ in ["NOUN", "PROPN"]]
+    # Remove duplicates while preserving order
+    hashtags = sorted(set(hashtags), key=hashtags.index)
+    return hashtags
 
 
 load_dotenv()  # Load environment variables from .env file
@@ -54,6 +82,9 @@ class Task(BaseModel):
     status: str = Field(..., description="Status of the task, can be used to specify 'Behavioral Prompt'")
     priority: int = Field(ge=1, le=5)
     area: Optional[str] = Field(None, description="The area of the task: personal, work, project development, custom area")
+    FULLCONTENT: str = Field(None, description="Complete content of the task")
+    hashtags: str = Field(None, description="Hashtags associated with the task")
+    related_tasks: list[int] = Field(default_factory=list, description="List of identifiers for related tasks")
 
 @classmethod
 def parse_due_date(cls, due_date: str):
@@ -146,6 +177,8 @@ def task_exists(task_id: int, database: str = "tasks") -> bool:
 
 @app.post("/tasks", status_code=201, dependencies=[Depends(verify_token)])
 def manage_task(task: Task):
+  # Convert list of related task ids to a comma-separated string for storing in SQLite
+    related_tasks_str = ",".join(map(str, task.related_tasks))
     try:
         with get_db_connection("tasks") as conn:
             cursor = conn.cursor()
@@ -157,8 +190,8 @@ def manage_task(task: Task):
                 task_id = task.id  # Assign the task ID after updating
             else:
                 cursor.execute(
-                    "INSERT INTO Tasks (title, description, due_date, status, priority, area) VALUES (?, ?, ?, ?, ?, ?)",
-                    (task.title, task.description, task.due_date, task.status, task.priority, task.area)
+                    "INSERT INTO Tasks (title, description, due_date, status, priority, area, full_content, hashtags, related_tasks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (task.title, task.description, task.due_date, task.status, task.priority, task.area, task.FULLCONTENT, task.hashtags, related_tasks_str)
                 )
                 task_id = cursor.lastrowid  # Assign the task ID after insertion
             conn.commit()
@@ -170,6 +203,11 @@ def manage_task(task: Task):
         log_action(f"Server error: {e}")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
+@app.post("/generate-hashtags", response_model=list)
+def generate_hashtags(data: TextData):
+    language = detect_language(data.text)
+    hashtags = extract_hashtags(data.text, language)
+    return {"hashtags": hashtags}
 
 @app.get("/tasks", dependencies=[Depends(verify_token)])
 def get_tasks():
