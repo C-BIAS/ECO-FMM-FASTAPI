@@ -184,7 +184,6 @@ def manage_task(task: Task):
     except Exception as e:
         log_action(f"Server error: {e}")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
-
 @app.post("/generate-hashtags", response_model=list)
 def generate_hashtags(data: TextData):
     language = detect_language(data.text)
