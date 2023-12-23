@@ -7,15 +7,9 @@ authors = ["Your Name <you@example.com>"]
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.11"
 fastapi = "^0.105.0"
-starlette = ">=0.27.0,<0.28.0"
 pydantic = "^2.5.2"
 python-dotenv = "^1.0.0"
-uvicorn = {extras = ["standard"], version = "^0.17.6"}
-langdetect = "^1.0.9"
-spacy = "^3.7.2"
-
-[tool.poetry.dev-dependencies]
-
+uvicorn = "^0.25.0"
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md
@@ -27,3 +21,6 @@ exclude = [".cache"]
 select = ['E', 'W', 'F', 'I', 'B', 'C4', 'ARG', 'SIM']
 ignore = ['W291', 'W292', 'W293']
 
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

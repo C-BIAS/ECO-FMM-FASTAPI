@@ -1,30 +1,15 @@
 openapi: 3.0.0
 info:
   title: ECO-FMM-FASTAPI
-  version: v2.2.0
+  version: v2.1.0
   description: FastAPI application to manage tasks and receive feedback
   contact:
     name: C-BIAS ENTERPRISES
-    email: contact@cbias-enterprises.com
+    year: 2024
 servers:
   - url: https://eco-fmm.replit.app
     description: Main server
 paths:
-  /download-logs:
-    get:
-      operationId: downloadLogs
-      summary: Download logs
-      description: Allows the client to download the 'database_actions.log' file for debugging purposes.
-      responses:
-        "200":
-          description: A log file to download.
-          content:
-            text/plain:
-              schema:
-                type: string
-                format: binary
-        "500":
-          description: An error occurred while trying to serve the log file.
   /tasks:
     post:
       summary: Create or update a task
@@ -45,10 +30,8 @@ paths:
                 properties:
                   task_id:
                     type: integer
-                    description: Unique ID of the task
                   message:
                     type: string
-                    description: Response message
       security:
         - bearerAuth: []
     get:
@@ -107,10 +90,8 @@ paths:
                 properties:
                   feedback_id:
                     type: integer
-                    description: Unique ID of the feedback
                   message:
                     type: string
-                    description: Response message
       security:
         - bearerAuth: []
   /behaviors:
@@ -125,7 +106,7 @@ paths:
               $ref: "#/components/schemas/Behavior"
       responses:
         "201":
-          description: Behavior added
+          description: Behavior added successfully
           content:
             application/json:
               schema:
@@ -133,66 +114,43 @@ paths:
                 properties:
                   behavior_id:
                     type: integer
-                    description: Unique ID of the behavior
                   message:
                     type: string
-                    description: Response message
       security:
         - bearerAuth: []
-  /generate-hashtags:
-    post:
-      summary: Generate hashtags
-      operationId: generateHashtags
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                text:
-                  type: string
-                  description: Text to generate hashtags from
+    get:
+      summary: Retrieve a list of behaviors
+      operationId: getBehaviors
       responses:
         "200":
-          description: Generated hashtags
+          description: A list of behaviors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  hashtags:
-                    type: array
-                    items:
-                      type: string
-                    description: List of generated hashtags
-        "400":
-          description: Language detection failed
-      security:
-        - bearerAuth: []
-  /backup-dbs:
-    get:
-      summary: Backup databases
-      operationId: backupDbs
-      responses:
-        "200":
-          description: A zip file containing the backups of the databases
-          content:
-            application/x-zip-compressed:
-              schema:
-                type: string
-                format: binary
-        "500":
-          description: An error occurred while trying to backup the databases
+                type: array
+                items:
+                  $ref: "#/components/schemas/Behavior"
       security:
         - bearerAuth: []
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     Task:
       type: object
+      required:
+        - title
+        - description
+        - due_date
+        - status
+        - priority
       properties:
         id:
           type: integer
+          format: int64
           description: Unique ID of the task
         title:
           type: string
@@ -202,47 +160,44 @@ components:
           description: Description of the task
         due_date:
           type: string
-          description: Due date of the task in DD-MM-YYYY format
+          format: date-time
+          description: Due date of the task
+          nullable: true
         status:
           type: string
-          description: Status of the task
+          description: Current status of the task
         priority:
           type: integer
-          description: Priority of the task
+          description: Priority of the task, where 1 is the highest priority
+          minimum: 1
+          maximum: 5
         area:
           type: string
-          description: Area of the task
-        FULLCONTENT:
-          type: string
-          description: Complete content of the task
-        hashtags:
-          type: string
-          description: Hashtags associated with the task
-        related_tasks:
-          type: array
-          items:
-            type: integer
-          description: List of identifiers for related tasks
+          description: The area of the task (e.g., personal, work)
     UserFeedback:
       type: object
+      required:
+        - user_id
+        - feedback
       properties:
         user_id:
           type: integer
-          description: ID of the user providing feedback
+          format: int64
+          description: Unique identifier of the user
         feedback:
           type: string
-          description: Feedback content
+          description: Feedback provided by the user
     Behavior:
       type: object
+      required:
+        - description
       properties:
         id:
           type: integer
+          format: int64
           description: Unique ID of the behavior
         description:
           type: string
           description: Description of the behavior
-securitySchemes:
-  bearerAuth:
-    type: http
-    scheme: bearer
-    bearerFormat: JWT
+security:
+  - bearerAuth: []
