@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.mailutils
     pkgs.nix-update
     pkgs.nix
     pkgs.gitFull

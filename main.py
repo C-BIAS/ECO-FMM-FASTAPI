@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import Optional
 
-from dotenv import load_dotenv
 from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
                      HTTPAuthorizationCredentials, security)
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,7 +41,6 @@ def extract_hashtags(text: str, language: str) -> list:
     return hashtags
 
 
-load_dotenv()  # Load environment variables from .env file
 
 # Set up logger to write to file with the appropriate format
 logging.basicConfig(filename='database_actions.log',
