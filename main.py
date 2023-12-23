@@ -11,6 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from starlette.requests import Request
+from fastapi.responses import StreamingResponse
+from tempfile import NamedTemporaryFile
+from zipfile import ZipFile, ZIP_DEFLATED
+
 
 class TextData(BaseModel):
     """Pydantic Model for representing texts along with their source languages."""
@@ -261,7 +265,39 @@ def read_logs():
         return {"log_contents": log_contents}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read logs: {str(e)}")
+@app.get("/backup-dbs")
+def backup_dbs():
+    # Crear un archivo temporal para el archivo zip
+    with NamedTemporaryFile(delete=False) as temp_file:
+        # Crear un archivo zip en el archivo temporal
+        with ZipFile(temp_file, 'w', ZIP_DEFLATED) as zipf:
+            # Lista de bases de datos para respaldar
+            databases = ['tasks', 'behavior', 'memgen']
+            for db_name in databases:
+                # Nombre del archivo de respaldo para la base de datos actual
+                backup_file = f"{db_name}_backup.sqlite"
+                # Realizar el respaldo de la base de datos actual
+                with sqlite3.connect(f'databases/{db_name}.sqlite') as conn:
+                    with open(backup_file, 'w') as f:
+                        for line in conn.iterdump():
+                            f.write('%s\n' % line)
+                # Agregar el archivo de respaldo al archivo zip
+                zipf.write(backup_file, arcname=backup_file)
+                # Eliminar el archivo de respaldo después de agregarlo al zip
+                os.remove(backup_file)
+        # Guardar la ruta del archivo temporal para poder eliminarlo después
+        temp_path = temp_file.name
 
+    # Abrir el archivo temporal para enviarlo como respuesta
+    file_like = open(temp_path, mode="rb")
+    response = StreamingResponse(file_like, media_type="application/x-zip-compressed", headers={'Content-Disposition': 'attachment; filename="backup.zip"'})
+
+    # Eliminar el archivo temporal después de enviar la respuesta
+    @response.background
+    def cleanup():
+        os.remove(temp_path)
+
+    return response
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the ECO-FMM-FASTAPI v2.2.0 API!"}
