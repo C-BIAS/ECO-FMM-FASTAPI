@@ -20,3 +20,9 @@
 2023-12-23 16:52:25,329 - Disconnected from database: behavior_db
 2023-12-23 16:52:25,329 - Connecting to database: memgen_db
 2023-12-23 16:52:25,377 - Disconnected from database: memgen_db
+2023-12-23 17:05:57,800 - Connecting to database: tasks_db
+2023-12-23 17:05:57,807 - Disconnected from database: tasks_db
+2023-12-23 17:05:57,810 - Connecting to database: behavior_db
+2023-12-23 17:05:57,812 - Disconnected from database: behavior_db
+2023-12-23 17:05:57,812 - Connecting to database: memgen_db
+2023-12-23 17:05:57,812 - Disconnected from database: memgen_db

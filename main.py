@@ -270,16 +270,7 @@ def get_behaviors():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve behaviors: {str(e)}")
 
-# Add the new API endpoints and CRUD operations for the new tables here
-# For example, to add a user interaction:
-@app.post("/user_interactions", status_code=201, dependencies=[Depends(verify_token)])
-def add_user_interaction(interaction: UserInteraction):
-    # Implementation for adding a user interaction
-    pass
-  
-
-# ... (additional CRUD operations for new tables)
-@app.post("/memgen", status_code=201)
+app.post("/memgen", status_code=201)
 def create_memgen(memgen: Memgen):
     with get_db_connection("memgen_db") as conn:
         cursor = conn.cursor()
