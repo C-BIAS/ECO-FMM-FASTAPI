@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
   title: ECO-FMM-FASTAPI
-  version: v2.1.0
+  version: v2.2.0
   description: FastAPI application to manage tasks and receive feedback
   contact:
     name: C-BIAS ENTERPRISES
-    year: 2024
+    email: contact@cbias-enterprises.com
 servers:
   - url: https://eco-fmm.replit.app
     description: Main server
@@ -139,6 +139,53 @@ paths:
                     description: Response message
       security:
         - bearerAuth: []
+  /generate-hashtags:
+    post:
+      summary: Generate hashtags
+      operationId: generateHashtags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Text to generate hashtags from
+      responses:
+        "200":
+          description: Generated hashtags
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hashtags:
+                    type: array
+                    items:
+                      type: string
+                    description: List of generated hashtags
+        "400":
+          description: Language detection failed
+      security:
+        - bearerAuth: []
+  /backup-dbs:
+    get:
+      summary: Backup databases
+      operationId: backupDbs
+      responses:
+        "200":
+          description: A zip file containing the backups of the databases
+          content:
+            application/x-zip-compressed:
+              schema:
+                type: string
+                format: binary
+        "500":
+          description: An error occurred while trying to backup the databases
+      security:
+        - bearerAuth: []
 components:
   schemas:
     Task:
@@ -165,6 +212,17 @@ components:
         area:
           type: string
           description: Area of the task
+        FULLCONTENT:
+          type: string
+          description: Complete content of the task
+        hashtags:
+          type: string
+          description: Hashtags associated with the task
+        related_tasks:
+          type: array
+          items:
+            type: integer
+          description: List of identifiers for related tasks
     UserFeedback:
       type: object
       properties:
