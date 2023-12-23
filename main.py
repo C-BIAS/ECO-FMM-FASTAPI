@@ -81,15 +81,18 @@ class Behavior(BaseModel):
 
 @contextmanager
 def get_db_connection(database: str):
-    conn = sqlite3.connect(f'{database}.sqlite')
+    # Prepend the database directory path to the database filename
+    db_file = os.path.join('databases', f'{database}.sqlite')
+    conn = sqlite3.connect(db_file)
     try:
         yield conn
     finally:
         conn.close()
 
+
 def initialize_databases():
     # Initialize tasks_db.sqlite
-    with get_db_connection("tasks_db") as conn:
+    with get_db_connection("tasks") as conn:
         cursor = conn.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Tasks (
@@ -111,8 +114,19 @@ def initialize_databases():
         ''')
         conn.commit()
 
-    # Initialize behavior_db.sqlite
-    with get_db_connection("behavior_db") as conn:
+    # Initialize behavior.sqlite
+    with get_db_connection("behavior") as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Behavior (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                description TEXT NOT NULL
+            )
+        ''')
+        conn.commit()
+
+    # Initialize memgen.sqlite
+    with get_db_connection("memgen") as conn:
         cursor = conn.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Behavior (
@@ -124,7 +138,7 @@ def initialize_databases():
 
 initialize_databases() # Call the function to initialize both databases
 
-def task_exists(task_id: int, database: str = "tasks_db") -> bool:
+def task_exists(task_id: int, database: str = "tasks") -> bool:
     with get_db_connection(database) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM Tasks WHERE id = ?", (task_id,))
@@ -133,7 +147,7 @@ def task_exists(task_id: int, database: str = "tasks_db") -> bool:
 @app.post("/tasks", status_code=201, dependencies=[Depends(verify_token)])
 def manage_task(task: Task):
     try:
-        with get_db_connection("tasks_db") as conn:
+        with get_db_connection("tasks") as conn:
             cursor = conn.cursor()
             if task.id and task_exists(task.id):
                 cursor.execute(
@@ -160,7 +174,7 @@ def manage_task(task: Task):
 @app.get("/tasks", dependencies=[Depends(verify_token)])
 def get_tasks():
     try:
-        with get_db_connection("tasks_db") as conn:
+        with get_db_connection("tasks") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Tasks")
             tasks = cursor.fetchall()
@@ -172,7 +186,7 @@ def get_tasks():
 @app.get("/tasks/{task_id}", dependencies=[Depends(verify_token)])
 def get_task_by_id(task_id: int):
     try:
-        with get_db_connection("tasks_db") as conn:
+        with get_db_connection("tasks") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Tasks WHERE id = ?", (task_id,))
             task = cursor.fetchone()
@@ -188,7 +202,7 @@ def get_task_by_id(task_id: int):
 def submit_feedback(feedback: UserFeedback):
     log_action(f"Feedback submission endpoint called with feedback: {feedback.json()}")
     try:
-        with get_db_connection("tasks_db") as conn:
+        with get_db_connection("tasks") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO Feedback (user_id, feedback) VALUES (?, ?)", 
                            (feedback.user_id, feedback.feedback))
@@ -203,7 +217,7 @@ def submit_feedback(feedback: UserFeedback):
 @app.post("/behaviors", status_code=201, dependencies=[Depends(verify_token)])
 def add_behavior(behavior: Behavior):
     try:
-        with get_db_connection("behavior_db") as conn:
+        with get_db_connection("behavior") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO Behavior (description) VALUES (?)", 
                            (behavior.description,))
@@ -218,7 +232,7 @@ def add_behavior(behavior: Behavior):
 @app.get("/behaviors", dependencies=[Depends(verify_token)])
 def get_behaviors():
     try:
-        with get_db_connection("behavior_db") as conn:
+        with get_db_connection("behavior") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Behavior")
             behaviors = cursor.fetchall()
@@ -238,7 +252,7 @@ def read_logs():
 
 @app.get("/")
 def read_root():
-  return {"message": "Welcome to the ECO-FMM-FASTAPI v2.1.0 API!"}
+  return {"message": "Welcome to the ECO-FMM-FASTAPI v2.2.0 API!"}
 
 if __name__ == "__main__":
     import uvicorn
